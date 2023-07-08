@@ -1,0 +1,7 @@
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN
+PassengerAppRoot "/home/crypqrev/api.lego2sell.com"
+PassengerBaseURI "/"
+PassengerNodejs "/home/crypqrev/nodevenv/api.lego2sell.com/14/bin/node"
+PassengerAppType node
+PassengerStartupFile app.js
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION END
