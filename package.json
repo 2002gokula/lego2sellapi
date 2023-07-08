@@ -3,10 +3,13 @@
   "version": "1.0.0",
   "main": "app.js",
   "license": "MIT",
+  "engines": {
+    "node": "14.x"
+  },
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js",
-    "build":"npm i"
+    "build": "npm i"
   },
   "dependencies": {
     "bricklink-api": "^1.2.10",
