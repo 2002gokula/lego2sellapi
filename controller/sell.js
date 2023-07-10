@@ -13,6 +13,7 @@ exports.sellItem = async (req, res) => {
       userId,
     }).then((details) => {
       res.json({ message: "SUCCESS", body: details })
+      console.log(details)
     })
   } catch (err) {
     console.log(err.message)

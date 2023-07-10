@@ -1,0 +1,27 @@
+
+###
+
+POST /login
+Content-Type: application/json
+
+{
+  "email": "example_user",
+  "password": "example_password"
+}
+
+###
+
+GET http://localhost:5100/user/data
+Content-Type: application/json
+
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiSmltIiwiaWF0IjoxNTY4NzU5OTIyfQ.RT6wszuCeFLwC_6ksmNMIELxiC5s-uRivfRxyZof5ag"
+}
+###
+POST /login
+Content-Type: application/json
+
+{
+  "email": "example_user",
+  "password": "example_password"
+}

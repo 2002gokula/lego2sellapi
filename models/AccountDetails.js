@@ -1,32 +1,43 @@
-const { DataTypes } = require("sequelize");
-const sequelize = require("../db/connection");
-const User = require("./User");
+const mongoose = require("mongoose")
 
-const AccountDetails = sequelize.define("AccountDetails", {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-  },
+const accountDetailsSchema = new mongoose.Schema({
   accountNumber: {
-    type: DataTypes.STRING,
-    allowNull: false,
+    type: String,
   },
   sortCode: {
-    type: DataTypes.STRING,
-    allowNull: false,
+    type: String,
   },
   paymentMethod: {
-    type: DataTypes.STRING,
-    allowNull: false,
+    type: String,
+    required: true,
   },
   paypalEmail: {
-    type: DataTypes.STRING,
+    type: String,
+    required: true,
   },
 
-  // Other account-details columns...
-});
+  // Other account-details fields...
+})
 
-AccountDetails.belongsTo(User, { foreignKey: "userId" });
+accountDetailsSchema.virtual("id").get(function () {
+  return this._id.toHexString()
+})
 
-module.exports = AccountDetails;
+accountDetailsSchema.set("toJSON", {
+  virtuals: true,
+})
+
+accountDetailsSchema.set("toObject", {
+  virtuals: true,
+})
+
+accountDetailsSchema.virtual("userId", {
+  ref: "User",
+  localField: "userId",
+  foreignField: "_id",
+  justOne: true,
+})
+
+const AccountDetails = mongoose.model("AccountDetails", accountDetailsSchema)
+
+module.exports = AccountDetails
