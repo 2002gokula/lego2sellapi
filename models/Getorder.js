@@ -18,6 +18,15 @@ const accountDetailsSchema = new mongoose.Schema(
     offerId: {
       type: Number,
     },
+    ProductName: {
+      type: String,
+    },
+    ProductImg: {
+      type: String,
+    },
+    ProductId: {
+      type: Number,
+    },
     timestamp: {
       type: String,
     },

@@ -31,29 +31,7 @@ app.use(morgan("tiny"))
 const authRoutes = express.Router()
 // using routes
 app.use("/", legoRoute)
-// app.use("/", userRoute)
-// app.use("/", sellRoute)
 
-// const connectDB = async () => {
-//   try {
-//     // mongodb connection string
-//     const con = await mongoose.connect(
-//       "mongodb+srv://gokulakrishnanr812:NlgExDDyllfsc1T0@cluster0.5pdvzlv.mongodb.net/",
-//       {
-//         useNewUrlParser: true,
-//         useFindAndModify: false,
-//         useUnifiedTopology: true,
-//       }
-//     )
-//     mongoose.set("useCreateIndex", true) // Replace with `createIndexes`
-
-//     console.log(`MongoDB connected : ${con.connection.host}`)
-//   } catch (err) {
-//     console.log(err)
-//     process.exit(1)
-//   }
-// }
-// connectDB()
 mongoose.connect(
   "mongodb+srv://gokulakrishnanr812:NlgExDDyllfsc1T0@cluster0.5pdvzlv.mongodb.net/user",
   {
@@ -85,147 +63,6 @@ db.on("error", (error) => {
 app.listen(5100, () => {
   console.log(`SERVER RUNNING ON PORT ${5100}`)
 })
-
-// Define a User model
-// const userSchema = new mongoose.Schema({
-//   email: { type: String, unique: true },
-//   password: String,
-// })
-// const User = mongoose.model("User", userSchema)
-
-// app.post("/register", async (req, res) => {
-//   const { email, password } = req.body
-
-//   try {
-//     // Check if the email is already registered
-//     const existingUser = await User.findOne({ email })
-//     if (existingUser) {
-//       res.status(409).send("Email already registered")
-//       return
-//     }
-
-//     // Hash the password
-//     const hashedPassword = await bcrypt.hash(password, 10)
-
-//     // Create a new user
-//     const newUser = new User({ email, password: hashedPassword })
-//     await newUser.save()
-
-//     res.status(200).send("Registration successful")
-//   } catch (err) {
-//     console.error(err)
-//     res.status(500).send("An error occurred")
-//   }
-// })
-// app.post("/add_details", async (req, res) => {
-//   const { email, details } = req.body
-
-//   try {
-//     // Find the user by their email
-//     const user = await User.findOne({ email })
-
-//     if (!user) {
-//       res.status(404).send("User not found")
-//       return
-//     }
-//     // Save the details for the user
-//     user.details = details
-//     await user.save()
-
-//     res.status(200).send(user)
-//   } catch (error) {
-//     console.error(error)
-//     res.status(500).send("An error occurred")
-//   }
-// })
-
-// app.post("/login", async (req, res) => {
-//   const { email, password } = req.body
-
-//   try {
-//     // Find the user by their email
-//     const user = await User.findOne({ email })
-
-//     if (!user) {
-//       res.status(404).send("User not found")
-//       return
-//     }
-
-//     // Compare the password with the stored hash
-//     const passwordMatch = await bcrypt.compare(password, user.password)
-
-//     if (!passwordMatch) {
-//       res.status(401).send("Invalid password")
-//       return
-//     }
-
-//     res.status(200).send("Login successful")
-//   } catch (error) {
-//     console.error(error)
-//     res.status(500).send("An error occurred")
-//   }
-// })
-
-// const authenticateUser = async (req, res, next) => {
-//   const { email, password } = req.body
-
-//   try {
-//     // Find the user by their email
-//     const user = await User.findOne({ email })
-
-//     if (!user) {
-//       res.status(404).send("User not found")
-//       return
-//     }
-
-//     // Compare the password with the stored hash
-//     const passwordMatch = await bcrypt.compare(password, user.password)
-
-//     if (!passwordMatch) {
-//       res.status(401).send("Invalid password")
-//       return
-//     }
-
-//     // Set the user object on the request for future access
-//     req.user = user
-//     next()
-//   } catch (error) {
-//     console.error(error)
-//     res.status(500).send("An error occurred")
-//   }
-// }
-// app.post("/get_Quote", authenticateUser, async (req, res) => {
-//   const { quote } = req.body
-
-//   // Access the authenticated user via req.user
-//   const user = req.user
-
-//   try {
-//     // Save the quote for the user
-//     user.quote = quote
-//     await user.save()
-
-//     res.status(200).send(user)
-//   } catch (error) {
-//     console.error(error)
-//     res.status(500).send("An error occurred")
-//   }
-// })
-// app.post("/logout", (req, res) => {
-//   // Perform any necessary cleanup or session management logic
-//   // For example, clearing session data or removing tokens
-//   res.status(200).send("Logout successful")
-// })
-// app.post("/get_Quote/:id", verifyToken, async (req, res) => {
-//   const user = new GetQuote(req.body)
-
-//   try {
-//     await user.save()
-//     res.send(user)
-//   } catch (error) {
-//     res.status(500).send(error)
-//   }
-// })
 
 app.post("/signup", async (req, res) => {
   try {
@@ -268,22 +105,27 @@ app.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body
 
-    // Find the user by email
+    // Find the user with the provided email
     const user = await UserData.findOne({ email })
+
+    // If the user doesn't exist, return an error
     if (!user) {
-      return res.status(401).json({ message: "Invalid credentials" })
+      return res.status(401).json({ message: "Invalid email or password" })
     }
 
-    // Compare the provided password with the stored hashed password
+    // Compare the provided password with the hashed password stored in the database
     const passwordMatch = await bcrypt.compare(password, user.password)
+
+    // If the passwords don't match, return an error
     if (!passwordMatch) {
-      return res.status(401).json({ message: "Invalid credentials" })
+      return res.status(401).json({ message: "Invalid email or password" })
     }
 
-    // Generate a token
-    const token = jwt.sign({ userId: user._id }, "secret", { expiresIn: "1h" })
+    // If the email and password are valid, generate a token or perform any other login logic
 
-    return res.status(200).json({ token })
+    return res
+      .status(200)
+      .json({ message: "Login successful", userId: user._id })
   } catch (error) {
     console.error(error)
     return res.status(500).json({ message: "Internal Server Error" })
@@ -312,24 +154,24 @@ app.post("/data/:id", async (req, res) => {
     return res.status(500).json({ message: "Internal Server Error" })
   }
 })
-
 // Retrieve user data by ID
-app.get("/data/:id", async (req, res) => {
+app.get("/GetOrder/", async (req, res) => {
   try {
-    const { id } = req.params
+    // const { id } = req.params
 
     // Find the user by ID
-    const user = await UserData.findById(id)
+    const user = await UserData.find({})
     if (!user) {
       return res.status(404).json({ message: "User not found" })
     }
 
-    return res.status(200).json({ data: user.data })
+    return res.status(200).json({ data: user })
   } catch (error) {
     console.error(error)
     return res.status(500).json({ message: "Internal Server Error" })
   }
 })
+
 app.post("/logout", async (req, res) => {
   try {
     const token = req.headers.authorization
@@ -471,6 +313,38 @@ app.get("/Getorder/:id", async (req, res) => {
     const orders = user.Order
 
     return res.status(200).json({ orders })
+  } catch (error) {
+    console.error(error)
+    return res.status(500).json({ message: "Internal Server Error" })
+  }
+})
+
+app.put("/Getorder/status/:id", async (req, res) => {
+  try {
+    const { id } = req.params
+    const { orderId, Status } = req.body
+
+    // Find the user details by ID
+    const user = await UserData.findById(id)
+    if (!user) {
+      return res.status(404).json({ message: "User details not found" })
+    }
+
+    // Find the order in the user's Order array by orderId
+    const order = user.Order.find((o) => o._id.toString() === orderId)
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" })
+    }
+
+    // Update the status of the order
+    order.Status = Status
+
+    user.markModified("Order") // Mark the Order array as modified
+    await user.save()
+
+    return res
+      .status(200)
+      .json({ message: "Order status updated successfully" })
   } catch (error) {
     console.error(error)
     return res.status(500).json({ message: "Internal Server Error" })
