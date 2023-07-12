@@ -319,7 +319,7 @@ app.get("/Getorder/:id", async (req, res) => {
   }
 })
 
-app.put("/Getorder/status/:id", async (req, res) => {
+app.put("/Getorder/status/", async (req, res) => {
   try {
     const { id } = req.params
     const { orderId, Status } = req.body
