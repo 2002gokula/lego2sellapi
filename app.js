@@ -318,6 +318,25 @@ app.get("/Getorder/:id", async (req, res) => {
     return res.status(500).json({ message: "Internal Server Error" })
   }
 })
+app.get("/Mydetails/:id", async (req, res) => {
+  try {
+    const { id } = req.params
+
+    // Find the user details by ID
+    const user = await UserData.findById(id)
+    if (!user) {
+      return res.status(404).json({ message: "User details not found" })
+    }
+
+    // Retrieve the user's orders
+    const Mydetails = user.Mydetails
+
+    return res.status(200).json({ Mydetails })
+  } catch (error) {
+    console.error(error)
+    return res.status(500).json({ message: "Internal Server Error" })
+  }
+})
 
 app.put("/Getorder/status/", async (req, res) => {
   try {
