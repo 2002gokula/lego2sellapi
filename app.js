@@ -338,6 +338,30 @@ app.get("/Mydetails/:id", async (req, res) => {
   }
 })
 
+app.put("/Mydetails/:id", async (req, res) => {
+  try {
+    const { id } = req.params
+    const { newValue } = req.body // Assuming the new value is sent in the request body
+
+    // Find the user details by ID
+    const user = await UserData.findById(id)
+    if (!user) {
+      return res.status(404).json({ message: "User details not found" })
+    }
+
+    // Update the Mydetails property with the new value
+    user.Mydetails = newValue
+
+    // Save the updated user details
+    await user.save()
+
+    return res.status(200).json({ message: "Mydetails updated successfully" })
+  } catch (error) {
+    console.error(error)
+    return res.status(500).json({ message: "Internal Server Error" })
+  }
+})
+
 app.put("/Getorder/status/", async (req, res) => {
   try {
     const { id } = req.params
