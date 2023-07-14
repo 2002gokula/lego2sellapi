@@ -263,7 +263,9 @@ app.post("/Getorder/:id", async (req, res) => {
     // Find the user details by ID
     const user = await UserData.findById(id)
     if (!user) {
-      return res.status(404).json({ message: "User details not found" })
+      return res
+        .status(404)
+        .json({ message: "User details not found", offerId })
     }
 
     // Push the new order into the existing user.Order array
