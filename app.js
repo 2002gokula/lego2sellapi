@@ -395,3 +395,45 @@ app.put("/Getorder/status/", async (req, res) => {
     return res.status(500).json({ message: "Internal Server Error" })
   }
 })
+const formDataSchema = new mongoose.Schema({
+  name: String,
+  email: String,
+  message: String,
+})
+
+// Create a model based on the schema
+const FormData = mongoose.model("contactusSubmit", formDataSchema)
+
+app.post("/contactus/submit", (req, res) => {
+  const { name, email, message } = req.body
+
+  // Create a new FormData document
+  const formData = new FormData({
+    name: name,
+    email: email,
+    message: message,
+  })
+
+  // Save the form data to MongoDB
+  formData
+    .save()
+    .then(() => {
+      console.log("Form data saved successfully!")
+      res.send("Form submitted successfully!")
+    })
+    .catch((error) => {
+      console.error("Error saving form data:", error)
+      res.send("An error occurred while submitting the form.")
+    })
+})
+
+app.get("/contactus/submit", (req, res) => {
+  FormData.find()
+    .then((submissions) => {
+      res.render("submissions", { submissions })
+    })
+    .catch((error) => {
+      console.error("Error retrieving form submissions:", error)
+      res.send("An error occurred while retrieving form submissions.")
+    })
+})
