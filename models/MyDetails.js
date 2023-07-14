@@ -28,6 +28,9 @@ const Details = new mongoose.Schema({
   city: {
     type: String,
   },
+  State: {
+    type: String,
+  },
   Country: {
     type: String,
   },
