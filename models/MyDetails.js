@@ -52,6 +52,12 @@ const Details = new mongoose.Schema({
   paymentMethod: {
     type: String,
   },
+  TermsCheck: {
+    type: String,
+  },
+  Marketingpreferences: {
+    type: String,
+  },
 })
 
 Details.virtual("id").get(function () {
