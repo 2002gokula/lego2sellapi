@@ -16,6 +16,8 @@ const passwordComplexity = require("joi-password-complexity")
 const GetQuote = require("./models/GetQuote")
 const Getorder = require("./models/Getorder")
 const uuid = require("uuid")
+const moment = require("moment")
+
 // routes
 const crypto = require("crypto")
 const legoRoute = require("./routes/lego")
@@ -259,7 +261,7 @@ app.post("/Getorder/:id", async (req, res) => {
     const { id } = req.params
     const data = new Getorder({
       ...req.body,
-      timestamp: new Date(),
+      timestamp: moment().format("MMM DD, YYYY, hh:mm A"),
     })
     const offerId = generateOfferId()
 
