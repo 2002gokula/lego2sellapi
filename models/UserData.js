@@ -8,8 +8,9 @@ const userSchema = new mongoose.Schema({
   Mydetails: Array,
   Order: Array,
   Search: String,
+  verifytoken: String,
 })
 
 // Define the User model
-const UserData = mongoose.model("UserData3", userSchema)
+const UserData = mongoose.model("UserData4", userSchema)
 module.exports = UserData

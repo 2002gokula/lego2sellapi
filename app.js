@@ -4,22 +4,30 @@ const morgan = require("morgan")
 const sequelize = require("./db/connection")
 const mongoose = require("mongoose")
 const app = express()
+const nodemailer = require("nodemailer")
 const bcrypt = require("bcrypt")
+const Token = require("./models/token")
 const { verifyToken } = require("./middleware/jwt")
+const sendEmail = require("./utils/Sendemail.js")
 const authRoute = require("./routes/auth.route")
 const userRoute = require("./routes/order")
+const Joi = require("joi")
+const passwordComplexity = require("joi-password-complexity")
 const GetQuote = require("./models/GetQuote")
 const Getorder = require("./models/Getorder")
 const uuid = require("uuid")
 // routes
+const crypto = require("crypto")
 const legoRoute = require("./routes/lego")
 const jwt = require("jsonwebtoken")
 const AccountDetails = require("./models/AccountDetails")
 const UserData = require("./models/UserData")
 const MyDetails = require("./models/MyDetails")
 const SearchItem = require("./models/Search")
-
+const keysecret =
+  "2ba8337ba5e7176aac61228413e51173306995f99b126fa812ceaf74c2ed41f8e78a83b1fa4ab8ef63ce9df3ca0be6ebc4d51b4e89beb8e74e356f9aee"
 app.use(express.json())
+
 app.use(express.urlencoded({ extended: true }))
 app.use(
   cors({
@@ -251,13 +259,7 @@ app.post("/Getorder/:id", async (req, res) => {
     const { id } = req.params
     const data = new Getorder({
       ...req.body,
-      timestamp: new Date().toLocaleString("en-US", {
-        month: "short",
-        day: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
+      timestamp: new Date(),
     })
     const offerId = generateOfferId()
 
@@ -366,7 +368,7 @@ app.put("/Mydetails/:id", async (req, res) => {
   }
 })
 
-app.put("/Getorder/status/", async (req, res) => {
+app.put("/Getorder/status/:id", async (req, res) => {
   try {
     const { id } = req.params
     const { orderId, Status } = req.body
@@ -438,4 +440,137 @@ app.get("/contactus/submit", (req, res) => {
       console.error("Error retrieving form submissions:", error)
       res.send("An error occurred while retrieving form submissions.")
     })
+})
+
+app.put("/MyDetafgils/:id", async (req, res) => {
+  try {
+    const { id } = req.params
+    const { Marketingpreferences } = req.body
+
+    // Find the user details by ID and update lineMarketingpreferences
+    const updatedUser = await UserData.updateOne(
+      { _id: id },
+      {
+        $set: {
+          "Mydetails.Marketingpreferences": Marketingpreferences,
+        },
+      },
+      { new: true }
+    )
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User details not found" })
+    }
+
+    return res.status(200).json({ message: "Data saved successfully" })
+  } catch (error) {
+    console.error(error)
+    return res.status(500).json({ message: "Internal Server Error" })
+  }
+})
+const transporter = nodemailer.createTransport({
+  host: "smtp.ethereal.email",
+  port: 587,
+  auth: {
+    user: "dee.gulgowski@ethereal.email",
+    pass: "PHBQW7HyZDkq4rp88k",
+  },
+})
+// send email Link For reset Password
+app.post("/sendpasswordlink", async (req, res) => {
+  const { email } = req.body
+
+  if (!email) {
+    res.status(401).json({ status: 401, message: "Enter Your Email" })
+  }
+
+  try {
+    const userfind = await UserData.findOne({ email: email })
+    // token generate for reset password
+
+    const token = jwt.sign({ _id: userfind._id }, keysecret, {
+      expiresIn: "120s",
+    })
+
+    const setusertoken = await UserData.findByIdAndUpdate(
+      { _id: userfind._id },
+      { verifytoken: token },
+      { new: true }
+    )
+    console.log(setusertoken)
+
+    if (setusertoken) {
+      const mailOptions = {
+        from: "gokulakrisnan888@gmail.com",
+        to: email,
+        subject: "Sending Email For password Reset",
+        text: `This Link Valid For 2 MINUTES http://localhost:5173/lego2sell-client/forgotpassword/${userfind.id}/${setusertoken.verifytoken}`,
+      }
+
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          console.log("error", error)
+          res.status(401).json({ status: 401, message: "email not send" })
+        } else {
+          console.log("Email sent", info.response)
+          res
+            .status(201)
+            .json({ status: 201, message: "Email sent Succsfully" })
+        }
+      })
+    }
+  } catch (error) {
+    res.status(401).json({ status: 401, message: "invalid user" })
+  }
+})
+
+// verify user for forgot password time
+app.get("/forgotpassword/:id/:token", async (req, res) => {
+  const { id, token } = req.params
+
+  try {
+    const validuser = await UserData.findOne({ _id: id, verifytoken: token })
+
+    const verifyToken = jwt.verify(token, keysecret)
+
+    console.log(verifyToken)
+
+    if (validuser && verifyToken._id) {
+      res.status(201).json({ status: 201, validuser })
+    } else {
+      res.status(401).json({ status: 401, message: "user not exist" })
+    }
+  } catch (error) {
+    res.status(401).json({ status: 401, error })
+  }
+})
+
+// change password
+
+app.post("/forgotpassword/:id/:token", async (req, res) => {
+  const { id, token } = req.params
+
+  const { password } = req.body
+
+  try {
+    const validuser = await UserData.findOne({ _id: id, verifytoken: token })
+
+    const verifyToken = jwt.verify(token, keysecret)
+
+    if (validuser && verifyToken._id) {
+      const newpassword = await bcrypt.hash(password, 12)
+
+      const setnewuserpass = await UserData.findByIdAndUpdate(
+        { _id: id },
+        { password: newpassword }
+      )
+
+      setnewuserpass.save()
+      res.status(201).json({ status: 201, setnewuserpass })
+    } else {
+      res.status(401).json({ status: 401, message: "user not exist" })
+    }
+  } catch (error) {
+    res.status(401).json({ status: 401, error })
+  }
 })
