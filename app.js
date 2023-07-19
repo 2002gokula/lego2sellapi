@@ -444,38 +444,11 @@ app.get("/contactus/submit", (req, res) => {
     })
 })
 
-app.put("/MyDetafgils/:id", async (req, res) => {
-  try {
-    const { id } = req.params
-    const { Marketingpreferences } = req.body
-
-    // Find the user details by ID and update lineMarketingpreferences
-    const updatedUser = await UserData.updateOne(
-      { _id: id },
-      {
-        $set: {
-          "Mydetails.Marketingpreferences": Marketingpreferences,
-        },
-      },
-      { new: true }
-    )
-
-    if (!updatedUser) {
-      return res.status(404).json({ message: "User details not found" })
-    }
-
-    return res.status(200).json({ message: "Data saved successfully" })
-  } catch (error) {
-    console.error(error)
-    return res.status(500).json({ message: "Internal Server Error" })
-  }
-})
 const transporter = nodemailer.createTransport({
-  host: "smtp.ethereal.email",
-  port: 587,
+  service: "gmail",
   auth: {
-    user: "dee.gulgowski@ethereal.email",
-    pass: "PHBQW7HyZDkq4rp88k",
+    user: "gokulakrishnanr812@gmail.com",
+    pass: "dqscumjtoyhwxkzv",
   },
 })
 // send email Link For reset Password
@@ -491,8 +464,28 @@ app.post("/sendpasswordlink", async (req, res) => {
     // token generate for reset password
 
     const token = jwt.sign({ _id: userfind._id }, keysecret, {
-      expiresIn: "120s",
+      expiresIn: "9920s",
     })
+    // const secret = keysecret + userfind.password
+    // const token = jwt.sign(
+    //   { email: userfind.email, id: userfind._id },
+    //   secret,
+    //   {
+    //     expiresIn: "5m",
+    //   }
+    // )
+    // const secret = keysecret + userfind.password
+    // const token = jwt.sign(
+    //   { email: userfind.email, id: userfind._id },
+    //   secret,
+    //   {
+    //     expiresIn: "5m",
+    //   }
+    // )
+    // console.log(token)
+    // const token = jwt.sign({ email: user.email }, keysecret, {
+    //   expiresIn: "1275m",
+    // })
 
     const setusertoken = await UserData.findByIdAndUpdate(
       { _id: userfind._id },
@@ -506,7 +499,7 @@ app.post("/sendpasswordlink", async (req, res) => {
         from: "gokulakrisnan888@gmail.com",
         to: email,
         subject: "Sending Email For password Reset",
-        text: `This Link Valid For 2 MINUTES http://localhost:5173/lego2sell-client/forgotpassword/${userfind.id}/${setusertoken.verifytoken}`,
+        text: `This Link Valid For 2 MINUTES https://lego2sell.com/forgotpassword/${userfind.id}/${setusertoken.verifytoken}`,
       }
 
       transporter.sendMail(mailOptions, (error, info) => {
@@ -574,5 +567,64 @@ app.post("/forgotpassword/:id/:token", async (req, res) => {
     }
   } catch (error) {
     res.status(401).json({ status: 401, error })
+  }
+})
+// app.post("/forgotpassword/:id/:token", async (req, res) => {
+//   const { id, token } = req.params
+
+//   const { password } = req.body
+
+//   try {
+//     const validuser = await UserData.findOne({ _id: id, verifytoken: token })
+
+//     const verifyToken = jwt.verify(token, keysecret)
+
+//     if (validuser && verifyToken._id) {
+//       const newpassword = await bcrypt.hash(password, 12)
+
+//       const setnewuserpass = await userdb.findByIdAndUpdate(
+//         { _id: id },
+//         { password: newpassword }
+//       )
+
+//       setnewuserpass.save()
+//       res.status(201).json({ status: 201, setnewuserpass })
+//     } else {
+//       res.status(401).json({ status: 401, message: "user not exist" })
+//     }
+//   } catch (error) {
+//     res.status(401).json({ status: 401, error })
+//   }
+// })
+
+app.put("/Mydetails/Marketingpreferences/:id", async (req, res) => {
+  try {
+    const { id } = req.params
+    const { Marketingpreferences } = req.body
+
+    // Find the user details by ID
+    const user = await UserData.findById(id)
+    if (!user) {
+      return res.status(404).json({ message: "User details not found" })
+    }
+
+    // Find the order in the user's Order array by orderId
+    const mydetails = user.Mydetails.find((o) => o._id.toString())
+    if (!mydetails) {
+      return res.status(404).json({ message: "Order not found" })
+    }
+
+    // Update the status of the order
+    mydetails.Marketingpreferences = Marketingpreferences
+
+    user.markModified("Mydetails") // Mark the Order array as modified
+    await user.save()
+
+    return res
+      .status(200)
+      .json({ message: "Order status updated successfully" })
+  } catch (error) {
+    console.error(error)
+    return res.status(500).json({ message: "Internal Server Error" })
   }
 })
