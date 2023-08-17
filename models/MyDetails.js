@@ -58,6 +58,9 @@ const Details = new mongoose.Schema({
   Marketingpreferences: {
     type: String,
   },
+  Postcode: {
+    type: String,
+  },
 })
 
 Details.virtual("id").get(function () {

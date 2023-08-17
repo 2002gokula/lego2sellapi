@@ -27,6 +27,9 @@ const accountDetailsSchema = new mongoose.Schema(
     ProductId: {
       type: Number,
     },
+    setCondition: {
+      type: String,
+    },
     timestamp: {
       type: String,
     },

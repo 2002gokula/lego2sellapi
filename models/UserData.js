@@ -9,8 +9,9 @@ const userSchema = new mongoose.Schema({
   Order: Array,
   Search: String,
   verifytoken: String,
+  admin: String,
 })
 
 // Define the User model
-const UserData = mongoose.model("UserData4", userSchema)
+const UserData = mongoose.model("UserData88", userSchema)
 module.exports = UserData
