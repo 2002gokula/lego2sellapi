@@ -45,8 +45,8 @@ const authRoutes = express.Router()
 app.use("/", legoRoute)
 
 mongoose.connect(
-  // "mongodb+srv://lego2sell:cWzoQIiKBDiYR3DP@cluster0.x8j4tbk.mongodb.net/lego2sell",
-  "mongodb+srv://gokulakrishnanr812:9rCLq4ZezdW2VAax@cluster0.5pdvzlv.mongodb.net/lego2sell",
+  "mongodb+srv://lego2sell:cWzoQIiKBDiYR3DP@cluster0.x8j4tbk.mongodb.net/lego2sell",
+  // "mongodb+srv://gokulakrishnanr812:9rCLq4ZezdW2VAax@cluster0.5pdvzlv.mongodb.net/lego2sell",
   {
     useNewUrlParser: true,
     // useFindAndModify: false,
