@@ -17,7 +17,8 @@ const GetQuote = require("./models/GetQuote")
 const Getorder = require("./models/Getorder")
 const uuid = require("uuid")
 const moment = require("moment")
-
+const json2csv = require("json2csv").Parser
+const ExcelJS = require("exceljs")
 // routes
 const crypto = require("crypto")
 const legoRoute = require("./routes/lego")
@@ -39,11 +40,13 @@ app.use(
 app.use(morgan("tiny"))
 
 const authRoutes = express.Router()
+
 // using routes
 app.use("/", legoRoute)
 
 mongoose.connect(
-  "mongodb+srv://gokulakrishnanr812:NlgExDDyllfsc1T0@cluster0.5pdvzlv.mongodb.net/user",
+  // "mongodb+srv://lego2sell:cWzoQIiKBDiYR3DP@cluster0.x8j4tbk.mongodb.net/lego2sell",
+  "mongodb+srv://gokulakrishnanr812:9rCLq4ZezdW2VAax@cluster0.5pdvzlv.mongodb.net/lego2sell",
   {
     useNewUrlParser: true,
     // useFindAndModify: false,
@@ -97,6 +100,7 @@ app.post("/signup", async (req, res) => {
       userId: userId,
       email,
       password: hashedPassword,
+      admin: "user",
     })
     await newUser.save()
 
@@ -111,7 +115,28 @@ app.post("/signup", async (req, res) => {
     return res.status(500).json({ message: "Internal Server Error" })
   }
 })
+app.put("/update-email/:userId", async (req, res) => {
+  try {
+    const userId = req.params.userId
+    const { newEmail } = req.body
 
+    // Check if the new email already exists
+    const existingUser = await UserData.findOne({ email: newEmail })
+    if (existingUser) {
+      return res
+        .status(409)
+        .json({ message: "Email already registered", email: newEmail })
+    }
+
+    // Update the email
+    await UserData.findByIdAndUpdate(userId, { email: newEmail })
+
+    return res.status(200).json({ message: "Email updated successfully" })
+  } catch (error) {
+    console.error(error)
+    return res.status(500).json({ message: "Internal Server Error" })
+  }
+})
 // Login endpoint
 app.post("/login", async (req, res) => {
   try {
@@ -259,10 +284,16 @@ const generateOfferId = () => {
 app.post("/Getorder/:id", async (req, res) => {
   try {
     const { id } = req.params
+
+    // Add one hour to the new date object
+    // updatedTimestamp.setHours(updatedTimestamp.getHours())
     const data = new Getorder({
       ...req.body,
-      timestamp: moment().format("MMM DD, YYYY, hh:mm A"),
+      timestamp: new Date().toLocaleString("en-GB", {
+        timeZone: "Europe/London",
+      }),
     })
+
     const offerId = generateOfferId()
 
     data.offerId = offerId
@@ -271,7 +302,7 @@ app.post("/Getorder/:id", async (req, res) => {
     if (!user) {
       return res
         .status(404)
-        .json({ message: "User details not found", offerId })
+        .json({ message: "User details not found", timestamp })
     }
 
     // Push the new order into the existing user.Order array
@@ -410,28 +441,28 @@ const formDataSchema = new mongoose.Schema({
 // Create a model based on the schema
 const FormData = mongoose.model("contactusSubmit", formDataSchema)
 
-app.post("/contactus/submit", (req, res) => {
-  const { name, email, message } = req.body
+// app.post("/contactus/submit", (req, res) => {
+//   const { name, email, message } = req.body
 
-  // Create a new FormData document
-  const formData = new FormData({
-    name: name,
-    email: email,
-    message: message,
-  })
+//   // Create a new FormData document
+//   const formData = new FormData({
+//     name: name,
+//     email: email,
+//     message: message,
+//   })
 
-  // Save the form data to MongoDB
-  formData
-    .save()
-    .then(() => {
-      console.log("Form data saved successfully!")
-      res.send("Form submitted successfully!")
-    })
-    .catch((error) => {
-      console.error("Error saving form data:", error)
-      res.send("An error occurred while submitting the form.")
-    })
-})
+//   // Save the form data to MongoDB
+//   formData
+//     .save()
+//     .then(() => {
+//       console.log("Form data saved successfully!")
+//       res.send("Form submitted successfully!")
+//     })
+//     .catch((error) => {
+//       console.error("Error saving form data:", error)
+//       res.send("An error occurred while submitting the form.")
+//     })
+// })
 
 app.get("/contactus/submit", (req, res) => {
   FormData.find()
@@ -448,7 +479,7 @@ const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: "gokulakrishnanr812@gmail.com",
-    pass: "dqscumjtoyhwxkzv",
+    pass: "vugxxvrbmmiqxval",
   },
 })
 // send email Link For reset Password
@@ -464,28 +495,8 @@ app.post("/sendpasswordlink", async (req, res) => {
     // token generate for reset password
 
     const token = jwt.sign({ _id: userfind._id }, keysecret, {
-      expiresIn: "9920s",
+      expiresIn: "5m",
     })
-    // const secret = keysecret + userfind.password
-    // const token = jwt.sign(
-    //   { email: userfind.email, id: userfind._id },
-    //   secret,
-    //   {
-    //     expiresIn: "5m",
-    //   }
-    // )
-    // const secret = keysecret + userfind.password
-    // const token = jwt.sign(
-    //   { email: userfind.email, id: userfind._id },
-    //   secret,
-    //   {
-    //     expiresIn: "5m",
-    //   }
-    // )
-    // console.log(token)
-    // const token = jwt.sign({ email: user.email }, keysecret, {
-    //   expiresIn: "1275m",
-    // })
 
     const setusertoken = await UserData.findByIdAndUpdate(
       { _id: userfind._id },
@@ -498,8 +509,368 @@ app.post("/sendpasswordlink", async (req, res) => {
       const mailOptions = {
         from: "gokulakrisnan888@gmail.com",
         to: email,
-        subject: "Sending Email For password Reset",
+        subject: "Password reset requested",
         text: `This Link Valid For 2 MINUTES https://lego2sell.com/forgotpassword/${userfind.id}/${setusertoken.verifytoken}`,
+        html: `<div style="word-spacing:normal;background-color:#eeeeee">
+  <div style="background-color:#eeeeee">
+    
+    <div style="background:#ffffff;background-color:#ffffff;margin:0px auto;max-width:600px">
+      <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background:#ffffff;background-color:#ffffff;width:100%">
+        <tbody>
+          <tr>
+            <td style="direction:ltr;font-size:0px;padding:20px 0;text-align:center">
+              
+              <div style="background:#ffffff;background-color:#ffffff;margin:0px auto;max-width:600px">
+                <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background:#ffffff;background-color:#ffffff;width:100%">
+                  <tbody>
+                    <tr>
+                      <td style="direction:ltr;font-size:0px;padding:20px 0;text-align:center">
+                        
+                        <div class="m_-1190145159820946285mj-column-per-100" style="font-size:0px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%">
+                          <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top" width="100%">
+                            <tbody>
+                              <tr>
+                                <td align="center" style="font-size:0px;padding:10px 25px;padding-bottom:0;word-break:break-word">
+                                  <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:collapse;border-spacing:0px">
+                                    <tbody>
+                                      <tr>
+                                        <td style="width:244px">
+                                          <img height="auto" src="https://drive.google.com/uc?export=download&id=13lX7daaiEy6d24Chj_LPqAz8g6c3-pzh" style="border:0;display:block;outline:none;text-decoration:none;height:auto;width:100%;font-size:13px" width="244" class="CToWUd a6T" data-bit="iit" tabindex="0"><div class="a6S" dir="ltr" style="opacity: 0.01; left: 846px; top: 160px;"><div id=":o5" class="T-I J-J5-Ji aQv T-I-ax7 L3 a5q" role="button" tabindex="0" aria-label="Download attachment " jslog="91252; u014N:cOuCgd,Kr2w4b,xr6bB; 4:WyIjbXNnLWY6MTc3MTkyOTc2MDQ3ODI0MzkwMSIsbnVsbCxbXV0." data-tooltip-class="a1V" data-tooltip="Download"><div class="akn"><div class="aSK J-J5-Ji aYr"></div></div></div></div>
+                                        </td>
+                                      </tr>
+                                    </tbody>
+                                  </table>
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                        
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              
+    
+
+
+<div style="background:#ffffff;background-color:#ffffff;margin:0px auto;max-width:600px">
+  <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background:#ffffff;background-color:#ffffff;width:100%">
+    <tbody>
+      <tr>
+        <td style="direction:ltr;font-size:0px;padding:20px 0;text-align:center">
+          
+          <div class="m_-1190145159820946285mj-column-per-100" style="font-size:0px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%">
+            <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top" width="100%">
+              <tbody>
+                <tr>
+                  <td align="center" style="font-size:0px;padding:10px 25px;padding-bottom:0;word-break:break-word">
+                    <div style="font-size:40px;font-weight:800;line-height:50px;text-align:center;color:#000000">Password Recovery</div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div style="background:#ffffff;background-color:#ffffff;margin:0px auto;max-width:600px">
+  <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background:#ffffff;background-color:#ffffff;width:100%">
+    <tbody>
+      <tr>
+        <td style="direction:ltr;font-size:0px;padding:20px 0;text-align:center">
+          
+          <div class="m_-1190145159820946285mj-column-per-100" style="font-size:0px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%">
+            <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top" width="100%">
+              <tbody>
+                <tr>
+                  <td align="center" style="font-size:0px;padding:10px 25px;padding-bottom:0;word-break:break-word">
+                    <div style="font-size:18px;font-weight:400;line-height:33px;text-align:center;color:#87888f">A request has been made to reset your password. If you have not made this request please <a style="color:#6c65e2;font-weight:700;text-decoration:none" href="https://lego2sell.com/contact" target="_blank" data-saferedirecturl="https://lego2sell.com/contact">Contact Us</a></div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div style="background:#ffffff;background-color:#ffffff;margin:0px auto;max-width:600px">
+  <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background:#ffffff;background-color:#ffffff;width:100%">
+    <tbody>
+      <tr>
+        <td style="direction:ltr;font-size:0px;padding:20px 0;text-align:center">
+          
+          <div class="m_-1190145159820946285mj-column-per-100" style="font-size:0px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%">
+            <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top" width="100%">
+              <tbody>
+                <tr>
+                  <td align="center" style="font-size:0px;padding:10px 25px;padding-bottom:15px;word-break:break-word">
+                    <div  style="font-size:20px;font-weight:800;line-height:25px;text-align:center;color:#000000">Your Reset Link</div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div style="background:#ffffff;background-color:#ffffff;margin:0px auto;max-width:600px">
+  <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background:#ffffff;background-color:#ffffff;width:100%">
+    <tbody>
+      <tr>
+        <td style="direction:ltr;font-size:0px;padding:20px 0;text-align:center">
+          
+          <div class="m_-1190145159820946285mj-column-per-100" style="font-size:0px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%">
+            <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top" width="100%">
+              <tbody>
+                <tr>
+                  <td align="center" style="font-size:0px;padding:0 30px;word-break:break-word">
+                    <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:separate;width:90%;line-height:100%">
+                      <tbody><tr>
+                                                      <td align="center" bgcolor="#0066ff" role="presentation" style="border:none;border-radius:10px;height:50px;background:#0066ff" valign="middle">
+                              <a href="https://lego2sell.com/forgotpassword/${userfind.id}/${setusertoken.verifytoken}" style="display:inline-block;background:#0066ff;color:#ffffff;font-size:20px;font-weight:600;line-height:28px;margin:0;text-decoration:none;text-transform:none;padding:22px 0;border-radius:55px" target="_blank" data-saferedirecturl="https://lego2sell.com/forgotpassword/${userfind.id}/${setusertoken.verifytoken}"> Reset Password </a>
+                            </td>
+                                                </tr>
+                    </tbody></table>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div style="background:#ffffff;background-color:#ffffff;margin:0px auto;max-width:600px">
+  <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background:#ffffff;background-color:#ffffff;width:100%">
+    <tbody>
+      <tr>
+        <td style="direction:ltr;font-size:0px;padding:50px 20px;text-align:center">
+          
+          <div class="m_-1190145159820946285mj-column-per-100" style="font-size:0px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%">
+            <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top" width="100%">
+              <tbody>
+                <tr>
+                  <td align="center" style="font-size:0px;padding:10px 25px;padding-bottom:0;word-break:break-word">
+                    <div style="font-size:30px;font-weight:800;line-height:40px;text-align:center;color:#000000"> LEGO®2Sell.com - The best place to sell LEGO® Sets online</div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div style="background:#ffffff;background-color:#ffffff;margin:0px auto;max-width:600px">
+  <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background:#ffffff;background-color:#ffffff;width:100%">
+    <tbody>
+      <tr>
+        <td style="direction:ltr;font-size:0px;padding:0 20px;text-align:center">
+          
+          <div style="font-size:0px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%">
+            <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top" width="100%">
+              <tbody>
+              
+                <tr>
+                  <td align="left" style="font-size:0px;padding:10px 25px;padding-bottom:0;word-break:break-word">
+                    <div style="font-size:20px;font-weight:800;line-height:25px;text-align:left;color:#000000">High payouts</div>
+                  </td>
+                </tr>
+                <tr>
+                  <td align="left" style="font-size:0px;padding:10px 25px;padding-bottom:0;word-break:break-word">
+                    <div style="font-size:15px;font-weight:400;line-height:25px;text-align:left;color:#87888f">We pride ourselves on offering the highest price for your old LEGO® online.<br><br></div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <div style="font-size:0px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%">
+            <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top" width="100%">
+              <tbody>
+              </tbody>
+            </table>
+          </div>
+          
+          <div style="font-size:0px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%">
+            <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top" width="100%">
+              <tbody>
+               
+                <tr>
+                  <td align="left" style="font-size:0px;padding:10px 25px;padding-bottom:0;word-break:break-word">
+                    <div style="font-size:20px;font-weight:800;line-height:25px;text-align:left;color:#000000">Next-day payments</div>
+                  </td>
+                </tr>
+                <tr>
+                  <td align="left" style="font-size:0px;padding:10px 25px;padding-bottom:0;word-break:break-word">
+                    <div style="font-size:15px;font-weight:400;line-height:25px;text-align:left;color:#87888f">Need your money in a hurry? We’ll send your money the same day we receive your bricks!</div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div style="background:#ffffff;background-color:#ffffff;margin:0px auto;max-width:600px">
+  <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background:#ffffff;background-color:#ffffff;width:100%">
+    <tbody>
+      <tr>
+        <td style="direction:ltr;font-size:0px;padding:0 20px;text-align:center">
+          
+          <div style="font-size:0px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%">
+            <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top" width="100%">
+              <tbody>
+               
+                <tr>
+                  <td align="left" style="font-size:0px;padding:10px 25px;padding-bottom:0;word-break:break-word">
+                    <div style="font-size:20px;font-weight:800;line-height:25px;text-align:left;color:#000000">postage Refund </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td align="left" style="font-size:0px;padding:10px 25px;padding-bottom:0;word-break:break-word">
+                    <div style="font-size:15px;font-weight:400;line-height:25px;text-align:left;color:#87888f">Upto €2.49 refound for postage per items <br><br></div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <div style="font-size:0px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%">
+            <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top" width="100%">
+              <tbody>
+              </tbody>
+            </table>
+          </div>
+          
+          <div style="font-size:0px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%">
+            <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top" width="100%">
+              <tbody>
+                <tr>
+                  <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word">
+                    <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:collapse;border-spacing:0px">
+                      <tbody>
+                        
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+                <tr>
+                  <td align="left" style="font-size:0px;padding:10px 25px;padding-bottom:0;word-break:break-word">
+                    <div style="font-size:20px;font-weight:800;line-height:25px;text-align:left;color:#000000">Totally hassle-free</div>
+                  </td>
+                </tr>
+                <tr>
+                  <td align="left" style="font-size:0px;padding:10px 25px;padding-bottom:0;word-break:break-word">
+                    <div style="font-size:15px;font-weight:400;line-height:25px;text-align:left;color:#87888f">We buy new LEGO® sets with no fees or deplayed payments,no customer returns or hassle - simply box it, send and get paid </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+              
+              
+              <div style="background:#ffffff;background-color:#ffffff;margin:0px auto;max-width:600px">
+                <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background:#ffffff;background-color:#ffffff;width:100%">
+                  <tbody>
+                    <tr>
+                      <td style="direction:ltr;font-size:0px;padding:20px 0;text-align:center">
+                        
+                        <div class="m_-1190145159820946285mj-column-per-100" style="font-size:0px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%">
+                          <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top" width="100%">
+                            <tbody>
+                              <tr>
+                                <td align="center" style="font-size:0px;padding:10px 25px;padding-bottom:40px;word-break:break-word">
+                                  <div style="font-size:15px;font-weight:400;line-height:1;text-align:center;color:#87888f">
+                                    <p style="margin:0 auto;line-height:1.5">Sent by LEGO® LEGO2sell.com email system; this address is not monitored for response. Please direct all enquiries to: support@lego2sell.com.
+Visit us online at lego2sell.com to turn your New LEGO® Sets into cash.</p>
+                                  </div>
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                        
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              
+              <div style="background:#6c65e2;background-color:#6c65e2;margin:0px auto;max-width:600px">
+                <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background:#6c65e2;background-color:#6c65e2;width:100%">
+                  <tbody>
+                    <tr>
+                      <td style="direction:ltr;font-size:0px;padding:20px 0;padding-top:50px;text-align:center">
+                        
+                        <div class="m_-1190145159820946285mj-column-per-100" style="font-size:0px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%">
+                          <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top" width="100%">
+                            <tbody >
+                              <tr>
+                                <td align="center" style="font-size:0px;padding:10px 25px;padding-bottom:0px;word-break:break-word">
+                                  <div style="font-size:32px;font-weight:800;line-height:1.3;text-align:center;color:#ffffff">Support@lego2sell.com</div>
+                                </td>
+                              </tr>
+                            <tr><img style="width:60px;height:60px;" src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/2021_Facebook_icon.svg/2048px-2021_Facebook_icon.svg.png"/>
+                            <img    src="https://store-images.s-microsoft.com/image/apps.52135.13634052595610511.c45457c9-b4af-46b0-8e61-8d7c0aec3f56.a0fa539c-1edb-4631-8ad1-1b37c3fed095"/>
+                            </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                        
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              
+           
+              
+              
+              
+              
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+  </div>
+
+<br><img src="https://ci4.googleusercontent.com/proxy/2qzrSYIHO_Dx7Ktrw95Rr8WgHrdsbdoxzFkke8wYu1cP4uCRE2xJQR2EEjS6d1YUkgsyMlndVAU4RxEQIZw-xiSsuUVARgB9BPKmQpVl_nVjEpEvZv-Pr45tEozhM6_QX6gXtAGajK2WwHz34djmE9A4qPQTH9u4uRV-r79IDzhBu_BTazSfe-s=s0-d-e1-ft#https://x5lns.mjt.lu/oo/BAAABFeYYHMAAAAAAAAAAQ78zosAAYCsfx0AAAAAABFh-QBkuPi-4Cjf8uMdSoGCbEqwqkkU7wABkMI/1175b2fc/e.gif" height="1" width="1" alt="" border="0" style="height:1px;width:1px;border:0" class="CToWUd" data-bit="iit" jslog="138226; u014N:xr6bB; 53:WzAsMl0."><div class="yj6qo"></div><div class="adL">
+</div></div>`,
       }
 
       transporter.sendMail(mailOptions, (error, info) => {
@@ -622,9 +993,306 @@ app.put("/Mydetails/Marketingpreferences/:id", async (req, res) => {
 
     return res
       .status(200)
-      .json({ message: "Order status updated successfully" })
+      .json({ message: "Marketing Preferences status updated successfully" })
   } catch (error) {
     console.error(error)
     return res.status(500).json({ message: "Internal Server Error" })
+  }
+})
+
+app.post("/contactus/submit", (req, res) => {
+  const { name, email, message } = req.body
+
+  // Create a new FormData document
+  const formData = new FormData({
+    name: name,
+    email: email,
+    message: message,
+  })
+
+  // Save the form data to MongoDB (Assuming formData is a Mongoose model)
+  formData
+    .save()
+    .then(() => {
+      console.log("Form data saved successfully!")
+      const mailOptions = {
+        from: "support@lego2sell.com",
+        to: "support@lego2sell.com",
+        subject: "ContactUs Form Submition",
+        text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`,
+      }
+
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          console.error("Error sending email:", error)
+          res.send(
+            "An error occurred while submitting the form and sending the email."
+          )
+        } else {
+          console.log("Email sent:", info.response)
+          res.send("Form submitted successfully! Email sent to recipient.")
+        }
+      })
+    })
+    .catch((error) => {
+      console.error("Error saving form data:", error)
+      res.send("An error occurred while submitting the form.")
+    })
+})
+
+app.delete("/delete-account", async (req, res) => {
+  try {
+    const { email } = req.body
+
+    // Check if the userId and password are provided in the request
+    if (!email) {
+      return res
+        .status(400)
+        .json({ message: "User ID and password are required", email })
+    }
+
+    // Find the user by userId
+    const user = await UserData.findOne({ email })
+    if (!user) {
+      return res.status(404).json({ message: "User not found" })
+    }
+
+    // Check if the provided password matches the user's hashed password
+
+    // If the user is found and the password is valid, proceed with account deletion
+    await UserData.deleteOne({ email })
+    return res
+      .status(200)
+      .json({ message: "Account deleted successfully", email })
+  } catch (error) {
+    console.error(error)
+    return res.status(500).json({ message: "Internal Server Error" })
+  }
+})
+
+app.get("/user/:id", async (req, res) => {
+  try {
+    const { id } = req.params
+
+    // Check if the email exists in the database
+    const existingUser = await UserData.findById(id)
+
+    if (!existingUser) {
+      return res.status(404).json({ message: "User not found" })
+    }
+
+    // If the user exists, return all data for that user
+    return res.status(200).json(existingUser)
+  } catch (error) {
+    console.error(error)
+    return res.status(500).json({ message: "Internal Server Error" })
+  }
+})
+app.get("/data", async (req, res) => {
+  try {
+    const result = await UserData.find({})
+    res.json(result)
+  } catch (error) {
+    console.error("Error retrieving data from MongoDB:", error)
+    res.status(500).json({ error: "Internal server error" })
+  }
+})
+
+app.get("/export/csv", async (req, res) => {
+  try {
+    const data = await UserData.find({}, { email: 1, _id: 0 }) // Only fetch the email field
+
+    const fields = ["email"]
+    const json2csvParser = new json2csv({ fields })
+    const csv = json2csvParser.parse(data)
+
+    res.setHeader("Content-Disposition", 'attachment; filename="emails.csv"')
+    res.set("Content-Type", "text/csv")
+    res.status(200).send(csv)
+  } catch (error) {
+    res.status(500).send("Internal Server Error")
+  }
+})
+// app.get("/export/csv", async (req, res) => {
+//   try {
+//     const data = await UserData.find({}, { email: 1, _id: 0 }) // Only fetch the email field
+
+//     // Convert data to CSV
+//     const fields = ["email"]
+//     const json2csvParser = new json2csv({ fields })
+//     const csv = json2csvParser.parse(data)
+
+//     res.setHeader("Content-Disposition", 'attachment; filename="emails.csv"')
+//     res.set("Content-Type", "text/csv")
+//     res.status(200).send(csv)
+//   } catch (error) {
+//     res.status(500).send("Internal Server Error")
+//   }
+// })
+
+app.get("/export/csv/email", async (req, res) => {
+  try {
+    const data = await UserData.find({}, { _id: 0, data: 1 }) // Only fetch the "data" field
+    // const data = new GetQuote.find({})
+    // Convert data to CSV
+    const fields = ["data"]
+    const json2csvParser = new json2csv({ fields })
+    const csv = json2csvParser.parse(data)
+
+    res.setHeader("Content-Disposition", 'attachment; filename="emails.csv"')
+    res.set("Content-Type", "text/csv")
+    res.status(200).send(csv)
+  } catch (error) {
+    res.status(500).send("Internal Server Error")
+  }
+})
+
+app.get("/export/csv/alldata", async (req, res) => {
+  try {
+    const data = await UserData.find({})
+
+    // Convert data to CSV
+    const fields = Object.keys(data[0]._doc) // Get all field names from the first document
+    const json2csvParser = new json2csv({ fields })
+    const csv = json2csvParser.parse(data)
+
+    res.setHeader("Content-Disposition", 'attachment; filename="alldata.csv"')
+    res.set("Content-Type", "text/csv")
+    res.status(200).send(csv)
+  } catch (error) {
+    res.status(500).send("Internal Server Error")
+  }
+})
+
+app.get("/usersWithOrderCount", async (req, res) => {
+  try {
+    // Find all users
+    const users = await UserData.find({})
+
+    if (!users) {
+      return res.status(404).json({ message: "Users not found" })
+    }
+
+    // Calculate the total number of orders across all users, excluding Paid and Rejected orders
+    let totalOrderCount = 0
+    users.forEach((user) => {
+      user.Order.forEach((order) => {
+        if (order.status !== "Paid" && order.status !== "Rejected") {
+          totalOrderCount++
+        }
+      })
+    })
+
+    return res.status(200).json({ totalOrderCount, users })
+  } catch (error) {
+    console.error(error)
+    return res.status(500).json({ message: "Internal Server Error" })
+  }
+})
+
+app.get("/TotalPriceOut", async (req, res) => {
+  try {
+    // Find all users
+    const users = await UserData.find({})
+
+    if (!users) {
+      return res.status(404).json({ message: "Users not found" })
+    }
+
+    // Calculate the total paid out amount and total order count, excluding Rejected orders
+    let totalPaidOut = 0
+    let totalOrderCount = 0
+    users.forEach((user) => {
+      user.Order.forEach((order) => {
+        if (order.Status === "Paid") {
+          totalPaidOut += order.Price
+        }
+      })
+    })
+
+    return res.status(200).json({ totalPaidOut, totalOrderCount, users })
+  } catch (error) {
+    console.error(error)
+    return res.status(500).json({ message: "Internal Server Error" })
+  }
+})
+
+const FormDiscount = new mongoose.Schema({
+  MintValue: String,
+  VeryGood: String,
+})
+
+// Create a model based on the schema
+const FormDiscountValue = mongoose.model("DiscountValue", FormDiscount)
+
+app.put("/DiscountValue", async (req, res) => {
+  try {
+    // Extract data from the request body
+    const { MintValue, VeryGood, filter } = req.body
+
+    // Define the update operation using $set
+    const updateOperation = {
+      $set: { MintValue, VeryGood },
+    }
+
+    // Update the matching documents using updateMany
+    const result = await FormDiscountValue.updateMany(filter, updateOperation)
+
+    return res.status(200).json({
+      message: "Data updated successfully",
+      modifiedCount: result.nModified,
+    })
+  } catch (error) {
+    console.error(error)
+    return res.status(500).json({ message: "Internal Server Error" })
+  }
+})
+
+app.get("/DiscountValueGet", async (req, res) => {
+  try {
+    // Retrieve data from the FormDiscountValue collection
+    const discountValues = await FormDiscountValue.find({}).exec()
+
+    return res.status(200).json(discountValues)
+  } catch (error) {
+    console.error(error)
+    return res.status(500).json({ message: "Internal Server Error" })
+  }
+})
+
+app.post("/DiscountValuePOST", async (req, res) => {
+  try {
+    // Extract data from the request body
+    const { MintValue, VeryGood } = req.body
+
+    // Create a new instance of FormDiscountValue
+    const newDiscountValue = new FormDiscountValue({ MintValue, VeryGood })
+
+    // Save the new instance to the database
+    await newDiscountValue.save()
+
+    return res.status(201).json({
+      message: "Data created successfully",
+      data: newDiscountValue,
+    })
+  } catch (error) {
+    console.error(error)
+    return res.status(500).json({ message: "Internal Server Error" })
+  }
+})
+app.get("/Filter", async (req, res) => {
+  try {
+    const allUserData = await UserData.find({})
+
+    // Filter orders without "Paid" status
+    const filteredUserData = allUserData.map((user) => ({
+      ...user.toObject(),
+      Order: user.Order.filter((order) => order.Status !== "Paid"),
+    }))
+
+    res.json(filteredUserData)
+  } catch (error) {
+    console.error("Error retrieving data from MongoDB:", error)
+    res.status(500).json({ error: "Internal server error" })
   }
 })

@@ -51,20 +51,28 @@ exports.calculatePrice = async (req, res) => {
   try {
     const req = PriceGuide.get(ItemType.Set, code, {
       new_or_used: Condition.New,
+      country_code: "UK",
     })
     await bricklink
       .send(req)
       .then((price) => {
         const filteredPrice = price.price_detail
-        console.log(price)
-        // console.log("demor", price)
 
-        const lowestPrice = getLowestUnitPrice(filteredPrice)
+        // Calculate the lowest price
+        const lowestPrice = Math.min(
+          ...filteredPrice.map((item) => item.unit_price)
+        )
+
+        // Calculate the average price
+        const averagePrice =
+          (lowestPrice + lowestPrice * 0.48 + lowestPrice * 0.38) / 3
+
         const data = {
+          price,
           lowestPrice,
           price52: lowestPrice * 0.48,
           price62: lowestPrice * 0.38,
-          price,
+          averagePrice,
         }
 
         res.json({ message: "SUCCESS", body: data })
