@@ -13,5 +13,5 @@ const userSchema = new mongoose.Schema({
 })
 
 // Define the User model
-const UserData = mongoose.model("UserData88", userSchema)
+const UserData = mongoose.model("UserData89", userSchema)
 module.exports = UserData
