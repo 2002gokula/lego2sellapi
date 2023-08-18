@@ -1,6 +1,6 @@
 const User = require("../models/user.model.js")
 const createError = require("../utils/createError.js")
-const bcrypt = require("bcrypt")
+const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
 
 const register = async (req, res, next) => {

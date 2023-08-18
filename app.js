@@ -5,7 +5,7 @@ const sequelize = require("./db/connection")
 const mongoose = require("mongoose")
 const app = express()
 const nodemailer = require("nodemailer")
-const bcrypt = require("bcrypt")
+const bcrypt = require("bcryptjs")
 const Token = require("./models/token")
 const { verifyToken } = require("./middleware/jwt")
 const sendEmail = require("./utils/Sendemail.js")
@@ -45,8 +45,8 @@ const authRoutes = express.Router()
 app.use("/", legoRoute)
 
 mongoose.connect(
-  "mongodb+srv://lego2sell:cWzoQIiKBDiYR3DP@cluster0.x8j4tbk.mongodb.net/lego2sell",
-  // "mongodb+srv://gokulakrishnanr812:9rCLq4ZezdW2VAax@cluster0.5pdvzlv.mongodb.net/lego2sell",
+  // "mongodb+srv://lego2sell:cWzoQIiKBDiYR3DP@cluster0.x8j4tbk.mongodb.net/lego2sell",
+  "mongodb+srv://gokulakrishnanr812:9rCLq4ZezdW2VAax@cluster0.5pdvzlv.mongodb.net/lego2sell",
   {
     useNewUrlParser: true,
     // useFindAndModify: false,
@@ -92,7 +92,7 @@ app.post("/signup", async (req, res) => {
         .json({ message: "Email already registered", email })
     }
 
-    // Hash the password
+    // Hash the password using bcryptjs
     const hashedPassword = await bcrypt.hash(password, 10)
 
     // Create a new user with the generated ID
@@ -159,6 +159,7 @@ app.post("/login", async (req, res) => {
     }
 
     // If the email and password are valid, generate a token or perform any other login logic
+    // Here you can generate a JWT (JSON Web Token) for authentication, if needed
 
     return res
       .status(200)
@@ -915,29 +916,41 @@ app.get("/forgotpassword/:id/:token", async (req, res) => {
 
 app.post("/forgotpassword/:id/:token", async (req, res) => {
   const { id, token } = req.params
-
   const { password } = req.body
 
   try {
-    const validuser = await UserData.findOne({ _id: id, verifytoken: token })
+    // Find the user by ID and verify token
+    const validUser = await UserData.findOne({ _id: id, verifytoken: token })
 
+    // Verify the token
     const verifyToken = jwt.verify(token, keysecret)
 
-    if (validuser && verifyToken._id) {
-      const newpassword = await bcrypt.hash(password, 12)
+    if (validUser && verifyToken._id) {
+      // Hash the new password
+      const newPassword = await bcrypt.hash(password, 12)
 
-      const setnewuserpass = await UserData.findByIdAndUpdate(
+      // Update the user's password in the database
+      const updatedUser = await UserData.findByIdAndUpdate(
         { _id: id },
-        { password: newpassword }
+        { password: newPassword }
       )
 
-      setnewuserpass.save()
-      res.status(201).json({ status: 201, setnewuserpass })
+      // Save the updated user data
+      await updatedUser.save()
+
+      // Respond with a success message
+      res
+        .status(201)
+        .json({ status: 201, message: "Password reset successful" })
     } else {
-      res.status(401).json({ status: 401, message: "user not exist" })
+      // Invalid user or token
+      res
+        .status(401)
+        .json({ status: 401, message: "User not exist or invalid token" })
     }
   } catch (error) {
-    res.status(401).json({ status: 401, error })
+    // Error handling
+    res.status(500).json({ status: 500, error: "Internal Server Error" })
   }
 })
 // app.post("/forgotpassword/:id/:token", async (req, res) => {
