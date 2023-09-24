@@ -6,6 +6,7 @@ const mongoose = require("mongoose")
 const app = express()
 const nodemailer = require("nodemailer")
 const bcrypt = require("bcryptjs")
+const { Parser } = require("json2csv")
 const Token = require("./models/token")
 const { verifyToken } = require("./middleware/jwt")
 const sendEmail = require("./utils/Sendemail.js")
@@ -45,8 +46,7 @@ const authRoutes = express.Router()
 app.use("/", legoRoute)
 
 mongoose.connect(
-  // "mongodb+srv://lego2sell:cWzoQIiKBDiYR3DP@cluster0.x8j4tbk.mongodb.net/lego2sell",
-  "mongodb+srv://gokulakrishnanr812:9rCLq4ZezdW2VAax@cluster0.5pdvzlv.mongodb.net/lego2sell",
+  "mongodb+srv://lego2sell:cWzoQIiKBDiYR3DP@cluster0.x8j4tbk.mongodb.net/lego2sell",
   {
     useNewUrlParser: true,
     // useFindAndModify: false,
@@ -193,7 +193,7 @@ app.post("/data/:id", async (req, res) => {
   }
 })
 // Retrieve user data by ID
-app.get("/GetOrder/", async (req, res) => {
+app.get("/GetOrder", async (req, res) => {
   try {
     // const { id } = req.params
 
@@ -476,13 +476,32 @@ app.get("/contactus/submit", (req, res) => {
     })
 })
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
+const transporter1 = nodemailer.createTransport({
+  host: "smtp.forwardemail.net",
+  port: 465,
+  secure: true,
   auth: {
-    user: "gokulakrishnanr812@gmail.com",
-    pass: "vugxxvrbmmiqxval",
+    user: " passwordreset@lego2sell.com",
+    pass: "e9cc2ee67b0f5bd287349f1e",
   },
 })
+var transport = nodemailer.createTransport({
+  host: "smtp-relay.brevo.com",
+  port: 587,
+  auth: {
+    user: "support@lego2sell.com",
+    pass: "PzpUTS4NtGCWO0sY",
+  },
+})
+// const transporter = nodemailer.createTransport({
+//   host: "smtp.forwardemail.net",
+//   port: 465,
+//   secure: true,
+//   auth: {
+//     user: "noreply@lego2sell.com",
+//     pass: "3S,Mh&;R&^Zz",
+//   },
+// })
 // send email Link For reset Password
 app.post("/sendpasswordlink", async (req, res) => {
   const { email } = req.body
@@ -496,7 +515,7 @@ app.post("/sendpasswordlink", async (req, res) => {
     // token generate for reset password
 
     const token = jwt.sign({ _id: userfind._id }, keysecret, {
-      expiresIn: "5m",
+      expiresIn: "20m",
     })
 
     const setusertoken = await UserData.findByIdAndUpdate(
@@ -508,7 +527,7 @@ app.post("/sendpasswordlink", async (req, res) => {
 
     if (setusertoken) {
       const mailOptions = {
-        from: "gokulakrisnan888@gmail.com",
+        from: "noreply@lego2sell.com",
         to: email,
         subject: "Password reset requested",
         text: `This Link Valid For 2 MINUTES https://lego2sell.com/forgotpassword/${userfind.id}/${setusertoken.verifytoken}`,
@@ -567,7 +586,7 @@ app.post("/sendpasswordlink", async (req, res) => {
               <tbody>
                 <tr>
                   <td align="center" style="font-size:0px;padding:10px 25px;padding-bottom:0;word-break:break-word">
-                    <div style="font-size:40px;font-weight:800;line-height:50px;text-align:center;color:#000000">Password Recovery</div>
+                    <div style="font-size:34px;font-weight:800;line-height:50px;text-align:center;color:#000000">Password Recovery</div>
                   </td>
                 </tr>
               </tbody>
@@ -669,7 +688,7 @@ app.post("/sendpasswordlink", async (req, res) => {
               <tbody>
                 <tr>
                   <td align="center" style="font-size:0px;padding:10px 25px;padding-bottom:0;word-break:break-word">
-                    <div style="font-size:30px;font-weight:800;line-height:40px;text-align:center;color:#000000"> LEGO®2Sell.com - The best place to sell LEGO® Sets online</div>
+                    <div style="font-size:30px;font-weight:800;line-height:40px;text-align:center;color:#000000"> LEGO2Sell.com - The best place to sell Your New LEGO® Sets online</div>
                   </td>
                 </tr>
               </tbody>
@@ -699,7 +718,7 @@ app.post("/sendpasswordlink", async (req, res) => {
                 </tr>
                 <tr>
                   <td align="left" style="font-size:0px;padding:10px 25px;padding-bottom:0;word-break:break-word">
-                    <div style="font-size:15px;font-weight:400;line-height:25px;text-align:left;color:#87888f">We pride ourselves on offering the highest price for your old LEGO® online.<br><br></div>
+                    <div style="font-size:15px;font-weight:400;line-height:25px;text-align:left;color:#87888f">We pride ourselves on offering the highest price for your new LEGO® sets online.</div>
                   </td>
                 </tr>
               </tbody>
@@ -724,7 +743,7 @@ app.post("/sendpasswordlink", async (req, res) => {
                 </tr>
                 <tr>
                   <td align="left" style="font-size:0px;padding:10px 25px;padding-bottom:0;word-break:break-word">
-                    <div style="font-size:15px;font-weight:400;line-height:25px;text-align:left;color:#87888f">Need your money in a hurry? We’ll send your money the same day we receive your bricks!</div>
+                    <div style="font-size:15px;font-weight:400;line-height:25px;text-align:left;color:#87888f">Need your money fast? we'll send you your payment the same day we accept your new LEGO® set.</div>
                   </td>
                 </tr>
               </tbody>
@@ -749,12 +768,12 @@ app.post("/sendpasswordlink", async (req, res) => {
                
                 <tr>
                   <td align="left" style="font-size:0px;padding:10px 25px;padding-bottom:0;word-break:break-word">
-                    <div style="font-size:20px;font-weight:800;line-height:25px;text-align:left;color:#000000">postage Refund </div>
+                    <div style="font-size:20px;font-weight:800;line-height:25px;text-align:left;color:#000000">Postage Refund </div>
                   </td>
                 </tr>
                 <tr>
                   <td align="left" style="font-size:0px;padding:10px 25px;padding-bottom:0;word-break:break-word">
-                    <div style="font-size:15px;font-weight:400;line-height:25px;text-align:left;color:#87888f">Upto €2.49 refound for postage per items <br><br></div>
+                    <div style="font-size:15px;font-weight:400;line-height:25px;text-align:left;color:#87888f">We will give you up to £2.49 for each LEGO® set we accept.<br><br></div>
                   </td>
                 </tr>
               </tbody>
@@ -771,15 +790,6 @@ app.post("/sendpasswordlink", async (req, res) => {
           <div style="font-size:0px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%">
             <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top" width="100%">
               <tbody>
-                <tr>
-                  <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word">
-                    <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:collapse;border-spacing:0px">
-                      <tbody>
-                        
-                      </tbody>
-                    </table>
-                  </td>
-                </tr>
                 <tr>
                   <td align="left" style="font-size:0px;padding:10px 25px;padding-bottom:0;word-break:break-word">
                     <div style="font-size:20px;font-weight:800;line-height:25px;text-align:left;color:#000000">Totally hassle-free</div>
@@ -787,7 +797,7 @@ app.post("/sendpasswordlink", async (req, res) => {
                 </tr>
                 <tr>
                   <td align="left" style="font-size:0px;padding:10px 25px;padding-bottom:0;word-break:break-word">
-                    <div style="font-size:15px;font-weight:400;line-height:25px;text-align:left;color:#87888f">We buy new LEGO® sets with no fees or deplayed payments,no customer returns or hassle - simply box it, send and get paid </div>
+                    <div style="font-size:15px;font-weight:400;line-height:25px;text-align:left;color:#87888f">We Buy your new LEGO® Sets with no fees or delayed payments, No customer returns or  hassle - simply box it, send it and get paid. </div>
                   </td>
                 </tr>
               </tbody>
@@ -833,22 +843,29 @@ Visit us online at lego2sell.com to turn your New LEGO® Sets into cash.</p>
               <div style="background:#6c65e2;background-color:#6c65e2;margin:0px auto;max-width:600px">
                 <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background:#6c65e2;background-color:#6c65e2;width:100%">
                   <tbody>
-                    <tr>
-                      <td style="direction:ltr;font-size:0px;padding:20px 0;padding-top:50px;text-align:center">
-                        
+                
+                      <td align="center" style="direction:ltr;font-size:0px;padding:20px 0;padding-top:50px;text-align:center">
                         <div class="m_-1190145159820946285mj-column-per-100" style="font-size:0px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%">
-                          <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top" width="100%">
-                            <tbody >
-                              <tr>
-                                <td align="center" style="font-size:0px;padding:10px 25px;padding-bottom:0px;word-break:break-word">
-                                  <div style="font-size:32px;font-weight:800;line-height:1.3;text-align:center;color:#ffffff">Support@lego2sell.com</div>
-                                </td>
-                              </tr>
-                            <tr><img style="width:60px;height:60px;" src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/2021_Facebook_icon.svg/2048px-2021_Facebook_icon.svg.png"/>
-                            <img    src="https://store-images.s-microsoft.com/image/apps.52135.13634052595610511.c45457c9-b4af-46b0-8e61-8d7c0aec3f56.a0fa539c-1edb-4631-8ad1-1b37c3fed095"/>
-                            </tr>
-                            </tbody>
-                          </table>
+                          <div border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top;display:flex" width="100%">
+                         
+                            
+                                <div align="center" style="font-size:0px;padding:10px 25px;padding-bottom:0px;word-break:break-word">
+                                  <div style="font-size:24px;font-weight:800;line-height:1.3;text-align:center;color:#fff"><a style="color:#fff" href="mailto:Support@lego2sell.com" target="_blank">Support@lego2sell.com</a></div>
+                                </div>
+                        
+                          
+<div style="display:flex;align-items:center;justify-content:center;">
+    <div style="display:flex;justify-content:center;align-items:center;gap: 90px;">
+         <a href="https://www.facebook.com/people/Lego2sell/61550272267735/?mibextid=LQQJ4d">
+            <img style="width:60px; height:60px;" src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/2021_Facebook_icon.svg/2048px-2021_Facebook_icon.svg.png" />
+        </a>
+        <a style="margin-left:20px;" href="https://www.tiktok.com/@lego2sell.com">
+            <img  style="width:60px;height:60px;margin-left:20px" src="https://static-00.iconduck.com/assets.00/tik-tok-icon-2048x2048-mmnsrcbe.png" />
+    </div>
+</div>
+
+                      
+                          </div>
                         </div>
                         
                       </td>
@@ -874,10 +891,10 @@ Visit us online at lego2sell.com to turn your New LEGO® Sets into cash.</p>
 </div></div>`,
       }
 
-      transporter.sendMail(mailOptions, (error, info) => {
+      transport.sendMail(mailOptions, (error, info) => {
         if (error) {
           console.log("error", error)
-          res.status(401).json({ status: 401, message: "email not send" })
+          res.status(401).json({ status: 401, message: error })
         } else {
           console.log("Email sent", info.response)
           res
@@ -953,6 +970,7 @@ app.post("/forgotpassword/:id/:token", async (req, res) => {
     res.status(500).json({ status: 500, error: "Internal Server Error" })
   }
 })
+
 // app.post("/forgotpassword/:id/:token", async (req, res) => {
 //   const { id, token } = req.params
 
@@ -1013,6 +1031,16 @@ app.put("/Mydetails/Marketingpreferences/:id", async (req, res) => {
   }
 })
 
+const transporter = nodemailer.createTransport({
+  host: "smtp.forwardemail.net",
+  port: 465,
+  secure: true,
+  auth: {
+    user: "info@lego2sell.com",
+    pass: "3037971520209ce1a7094d6a",
+  },
+})
+
 app.post("/contactus/submit", (req, res) => {
   const { name, email, message } = req.body
 
@@ -1035,15 +1063,15 @@ app.post("/contactus/submit", (req, res) => {
         text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`,
       }
 
-      transporter.sendMail(mailOptions, (error, info) => {
+      transport.sendMail(mailOptions, (error, info) => {
         if (error) {
-          console.error("Error sending email:", error)
-          res.send(
-            "An error occurred while submitting the form and sending the email."
-          )
+          console.log("error", error)
+          res.status(401).json({ status: 401, message: error })
         } else {
-          console.log("Email sent:", info.response)
-          res.send("Form submitted successfully! Email sent to recipient.")
+          console.log("Email sent", info.response)
+          res
+            .status(201)
+            .json({ status: 201, message: "Email sent Succsfully" })
         }
       })
     })
@@ -1052,6 +1080,45 @@ app.post("/contactus/submit", (req, res) => {
       res.send("An error occurred while submitting the form.")
     })
 })
+// app.post("/contactus/submit", (req, res) => {
+//   const { name, email, message } = req.body
+
+//   // Create a new FormData document
+//   const formData = new FormData({
+//     name: name,
+//     email: email,
+//     message: message,
+//   })
+
+//   // Save the form data to MongoDB (Assuming formData is a Mongoose model)
+//   formData
+//     .save()
+//     .then(() => {
+//       console.log("Form data saved successfully!")
+//       const mailOptions = {
+//         from: "support@lego2sell.com",
+//         to: "support@lego2sell.com",
+//         subject: "ContactUs Form Submition",
+//         text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`,
+//       }
+
+//       transporter.sendMail(mailOptions, (error, info) => {
+//         if (error) {
+//           console.error("Error sending email:", error)
+//           res.send(
+//             "An error occurred while submitting the form and sending the email."
+//           )
+//         } else {
+//           console.log("Email sent:", info.response)
+//           res.send("Form submitted successfully! Email sent to recipient.")
+//         }
+//       })
+//     })
+//     .catch((error) => {
+//       console.error("Error saving form data:", error)
+//       res.send("An error occurred while submitting the form.")
+//     })
+// })
 
 app.delete("/delete-account", async (req, res) => {
   try {
@@ -1143,22 +1210,22 @@ app.get("/export/csv", async (req, res) => {
 //   }
 // })
 
-app.get("/export/csv/email", async (req, res) => {
-  try {
-    const data = await UserData.find({}, { _id: 0, data: 1 }) // Only fetch the "data" field
-    // const data = new GetQuote.find({})
-    // Convert data to CSV
-    const fields = ["data"]
-    const json2csvParser = new json2csv({ fields })
-    const csv = json2csvParser.parse(data)
+// app.get("/export/csv/email", async (req, res) => {
+//   try {
+//     const data = await UserData.find({}, { _id: 0, data: 1 }) // Only fetch the "data" field
+//     // const data = new GetQuote.find({})
+//     // Convert data to CSV
+//     const fields = ["data"]
+//     const json2csvParser = new json2csv({ fields })
+//     const csv = json2csvParser.parse(data)
 
-    res.setHeader("Content-Disposition", 'attachment; filename="emails.csv"')
-    res.set("Content-Type", "text/csv")
-    res.status(200).send(csv)
-  } catch (error) {
-    res.status(500).send("Internal Server Error")
-  }
-})
+//     res.setHeader("Content-Disposition", 'attachment; filename="emails.csv"')
+//     res.set("Content-Type", "text/csv")
+//     res.status(200).send(csv)
+//   } catch (error) {
+//     res.status(500).send("Internal Server Error")
+//   }
+// })
 
 app.get("/export/csv/alldata", async (req, res) => {
   try {
@@ -1307,5 +1374,385 @@ app.get("/Filter", async (req, res) => {
   } catch (error) {
     console.error("Error retrieving data from MongoDB:", error)
     res.status(500).json({ error: "Internal server error" })
+  }
+})
+app.get("/GetorderValue", async (req, res) => {
+  try {
+    const users = await UserData.find()
+
+    if (!users) {
+      return res.status(404).json({ message: "No users found" })
+    }
+
+    const allOrdersWithDetails = users.flatMap((user) => {
+      return user.Order.map((order) => ({
+        user: user,
+        order: order,
+      }))
+    })
+
+    return res.status(200).json({ orders: allOrdersWithDetails })
+  } catch (error) {
+    console.error(error)
+    return res.status(500).json({ message: "Internal Server Error" })
+  }
+})
+
+app.get("/export/csv/alldata1", async (req, res) => {
+  try {
+    const data = await UserData.find({}, "Mydetails Order")
+
+    // Convert data to CSV
+    if (data.length === 0 || !data[0].Mydetails || !data[0].Order) {
+      return res.status(404).send("No data found")
+    }
+
+    const myDetailsFields = Object.keys(data[0].Mydetails[0])
+    const orderFields = Object.keys(data[0].Order[0])
+
+    const csvFields = [
+      ...myDetailsFields.map((field) => {
+        return {
+          label: `Mydetails.${field}`,
+          value: (row) =>
+            row.Mydetails && row.Mydetails.length > 0
+              ? row.Mydetails[0][field] || ""
+              : "",
+        }
+      }),
+      ...orderFields.map((field) => {
+        return {
+          label: `Order.${field}`,
+          value: (row) =>
+            row.Order && row.Order.length > 0 ? row.Order[0][field] || "" : "",
+        }
+      }),
+    ]
+
+    const json2csvParser = new json2csv({ fields: csvFields })
+    const csv = json2csvParser.parse(data)
+
+    res.setHeader("Content-Disposition", 'attachment; filename="alldata2.csv"')
+    res.set("Content-Type", "text/csv")
+    res.status(200).send(csv)
+  } catch (error) {
+    console.error(error)
+    res.status(500).send("Internal Server Error")
+  }
+})
+app.get("/export/csv/order", async (req, res) => {
+  try {
+    const data = await UserData.find({}, "Mydetails Order")
+
+    // Convert data to CSV
+    if (data.length === 0 || !data[0].Mydetails || !data[0].Order) {
+      return res.status(404).send("No data found")
+    }
+
+    const orderFields = Object.keys(data[0].Order[0])
+
+    const csvFields = [
+      ...orderFields.map((field) => {
+        return {
+          label: `Order.${field}`,
+          value: (row) =>
+            row.Order && row.Order.length > 0 ? row.Order[0][field] || "" : "",
+        }
+      }),
+    ]
+
+    const json2csvParser = new json2csv({ fields: csvFields })
+    const csv = json2csvParser.parse(data)
+
+    res.setHeader("Content-Disposition", 'attachment; filename="alldata2.csv"')
+    res.set("Content-Type", "text/csv")
+    res.status(200).send(csv)
+  } catch (error) {
+    console.error(error)
+    res.status(500).send("Internal Server Error")
+  }
+})
+app.get("/export/csv/mydetails", async (req, res) => {
+  try {
+    const data = await UserData.find({}, "Mydetails Order")
+
+    // Convert data to CSV
+    if (data.length === 0 || !data[0].Mydetails || !data[0].Order) {
+      return res.status(404).send("No data found")
+    }
+
+    const myDetailsFields = Object.keys(data[0].Mydetails[0])
+
+    const csvFields = [
+      ...myDetailsFields.map((field) => {
+        return {
+          label: `Mydetails.${field}`,
+          value: (row) =>
+            row.Mydetails && row.Mydetails.length > 0
+              ? row.Mydetails[0][field] || ""
+              : "",
+        }
+      }),
+    ]
+
+    const json2csvParser = new json2csv({ fields: csvFields })
+    const csv = json2csvParser.parse(data)
+
+    res.setHeader("Content-Disposition", 'attachment; filename="alldata2.csv"')
+    res.set("Content-Type", "text/csv")
+    res.status(200).send(csv)
+  } catch (error) {
+    console.error(error)
+    res.status(500).send("Internal Server Error")
+  }
+})
+
+app.get("/export/csv/email", async (req, res) => {
+  try {
+    const users = await UserData.find({}, "data")
+
+    if (users.length === 0) {
+      return res.status(404).send("No data found")
+    }
+
+    const csvFields = [
+      {
+        label: "Email",
+        value: (row) => row.email || "",
+      },
+    ]
+
+    const emailData = users
+      .flatMap((user) =>
+        user.data.map((item) => ({
+          title: "Email",
+          email: item.email,
+        }))
+      )
+      .filter((item) => item.email)
+
+    const json2csvParser = new Parser({ fields: csvFields })
+    const csv = json2csvParser.parse(emailData)
+
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="all-emails.csv"'
+    )
+    res.set("Content-Type", "text/csv")
+    res.status(200).send(csv)
+  } catch (error) {
+    console.error(error)
+    res.status(500).send("Internal Server Error")
+  }
+})
+
+app.get("/export/csv/alldata2", async (req, res) => {
+  try {
+    const data = await UserData.find({}, "Mydetails Order")
+
+    // Convert data to CSV
+    if (data.length === 0) {
+      return res.status(404).send("No data found")
+    }
+
+    const csvFields = []
+
+    if (data[0].Mydetails && data[0].Mydetails.length > 0) {
+      const myDetailsFields = Object.keys(data[0].Mydetails[0])
+      csvFields.push(
+        ...myDetailsFields.map((field) => {
+          return {
+            label: `Mydetails.${field}`,
+            value: (row) =>
+              row.Mydetails && row.Mydetails.length > 0
+                ? row.Mydetails[0][field] || ""
+                : "",
+          }
+        })
+      )
+    }
+
+    if (data[0].Order && data[0].Order.length > 0) {
+      const orderFields = Object.keys(data[0].Order[0])
+      csvFields.push(
+        ...orderFields.map((field) => {
+          return {
+            label: `Order.${field}`,
+            value: (row) =>
+              row.Order && row.Order.length > 0
+                ? row.Order[0][field] || ""
+                : "",
+          }
+        })
+      )
+    }
+
+    const json2csvParser = new Parser({ fields: csvFields })
+    const csv = json2csvParser.parse(data)
+
+    res.setHeader("Content-Disposition", 'attachment; filename="alldata2.csv"')
+    res.set("Content-Type", "text/csv")
+    res.status(200).send(csv)
+  } catch (error) {
+    console.error(error)
+    res.status(500).send("Internal Server Error")
+  }
+})
+
+app.get("/export/csv/alldata3", async (req, res) => {
+  try {
+    const data = await UserData.find({}, "Mydetails Order")
+
+    // Convert data to CSV
+    if (data.length === 0) {
+      return res.status(404).send("No data found")
+    }
+
+    const csvFields = []
+
+    if (data[0].Mydetails && data[0].Mydetails.length > 0) {
+      const myDetailsFields = Object.keys(data[0].Mydetails[0])
+      csvFields.push(
+        ...myDetailsFields.map((field) => {
+          return {
+            label: `Mydetails.${field}`,
+            value: (row) =>
+              row.Mydetails && row.Mydetails.length > 0
+                ? row.Mydetails[0][field] || ""
+                : "",
+          }
+        })
+      )
+    }
+
+    if (data[0].Order && data[0].Order.length > 0) {
+      const orderFields = ["productName", "productId", "productCondition"] // Define the specific fields you want to include
+      csvFields.push(
+        ...orderFields.map((field) => {
+          return {
+            label: `Order.${field}`,
+            value: (row) =>
+              row.Order && row.Order.length > 0
+                ? row.Order[0][field] || ""
+                : "",
+          }
+        })
+      )
+    }
+
+    const json2csvParser = new Parser({ fields: csvFields })
+    const csv = json2csvParser.parse(data)
+
+    res.setHeader("Content-Disposition", 'attachment; filename="alldata2.csv"')
+    res.set("Content-Type", "text/csv")
+    res.status(200).send(csv)
+  } catch (error) {
+    console.error(error)
+    res.status(500).send("Internal Server Error")
+  }
+})
+app.get("/export/csv/alldata4", async (req, res) => {
+  try {
+    const data = await UserData.find({}, "Order") // Only fetch the 'Order' field
+
+    // Convert data to CSV
+    if (data.length === 0) {
+      return res.status(404).send("No data found")
+    }
+
+    const csvFields = []
+
+    if (data[0].Order && data[0].Order.length > 0) {
+      const orderFields = Object.keys(data[0].Order[0])
+      csvFields.push(
+        ...orderFields.map((field) => {
+          return {
+            label: `Order.${field}`,
+            value: (row) =>
+              row.Order && row.Order.length > 0
+                ? row.Order[0][field] || ""
+                : "",
+          }
+        })
+      )
+    }
+
+    const json2csvParser = new Parser({ fields: csvFields })
+    const csv = json2csvParser.parse(data)
+
+    res.setHeader("Content-Disposition", 'attachment; filename="alldata2.csv"')
+    res.set("Content-Type", "text/csv")
+    res.status(200).send(csv)
+  } catch (error) {
+    console.error(error)
+    res.status(500).send("Internal Server Error")
+  }
+})
+
+app.get("/export/csv/order1", async (req, res) => {
+  try {
+    const data = await UserData.find({}, "Order")
+
+    // Convert data to CSV
+    if (data.length === 0 || !data[0].Order) {
+      return res.status(404).send("No data found")
+    }
+
+    const orderFields = data[0].Order[0] ? Object.keys(data[0].Order[0]) : []
+
+    const csvFields = orderFields.map((field) => {
+      return {
+        label: `Order.${field}`,
+        value: (row) =>
+          row.Order && row.Order.length > 0 ? row.Order[0][field] || "" : "",
+      }
+    })
+
+    const json2csvParser = new Parser({ fields: csvFields })
+    const csv = json2csvParser.parse(data)
+
+    res.setHeader("Content-Disposition", 'attachment; filename="alldata2.csv"')
+    res.set("Content-Type", "text/csv")
+    res.status(200).send(csv)
+  } catch (error) {
+    console.error(error)
+    res.status(500).send("Internal Server Error")
+  }
+})
+
+app.get("/export/csv/alldata6", async (req, res) => {
+  try {
+    const data = await UserData.find({}, "Order")
+
+    // Convert data to CSV
+    if (data.length === 0) {
+      return res.status(404).send("No data found")
+    }
+
+    const csvFields = [
+      {
+        label: "ProductName",
+        value: (row) => row.ProductName || "",
+      },
+      {
+        label: "ProductId",
+        value: (row) => row.ProductId || "",
+      },
+      {
+        label: "setCondition",
+        value: (row) => row.setCondition || "",
+      },
+    ]
+
+    const orderFields = data.flatMap((user) => user.Order)
+    const json2csvParser = new Parser({ fields: csvFields })
+    const csv = json2csvParser.parse(orderFields)
+
+    res.setHeader("Content-Disposition", 'attachment; filename="alldata2.csv"')
+    res.set("Content-Type", "text/csv")
+    res.status(200).send(csv)
+  } catch (error) {
+    console.error(error)
+    res.status(500).send("Internal Server Error")
   }
 })

@@ -33,6 +33,9 @@ const accountDetailsSchema = new mongoose.Schema(
     timestamp: {
       type: String,
     },
+    thiswebsiteisnotpaidfordev: {
+      type: String,
+    },
   },
   {
     timestamps: true,
